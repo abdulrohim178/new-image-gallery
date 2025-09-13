@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Gallery</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f5f5;
+            min-height: 100vh;
+            padding-top: 70px;
+            padding-bottom: 80px; /* Space for bottom nav */
+        }
+
+        /* New Top Bar */
+        .top-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
+            z-index: 1001;
+            height: 70px;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo-text {
+            font-size: 28px;
+            font-weight: 800;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            color: transparent;
+            letter-spacing: -1px;
+        }
+
+        /* New Bottom Navigation */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(0, 0, 0, 0.1);
+            padding: 15px 20px 25px 20px;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            box-shadow: 0 -5px 25px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            padding: 8px 12px;
+            border-radius: 12px;
+            min-width: 60px;
+            position: relative;
+        }
+
+        .nav-item:hover {
+            background: rgba(102, 126, 234, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .nav-item.active {
+            background: rgba(102, 126, 234, 0.15);
+            transform: translateY(-3px);
+        }
+
+        .nav-icon {
+            width: 28px;
+            height: 28px;
+            margin-bottom: 4px;
+            transition: all 0.3s ease;
+            opacity: 0.7;
+            color: #666;
+        }
+
+        .nav-item:hover .nav-icon,
+        .nav-item.active .nav-icon {
+            opacity: 1;
+            transform: scale(1.1);
+            color: #667eea;
+        }
+
+        .nav-label {
+            font-size: 11px;
+            color: #666;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .nav-item:hover .nav-label,
+        .nav-item.active .nav-label {
+            color: #667eea;
+            font-weight: 600;
+        }
+
+        .home-indicator {
+            position: absolute;
+            bottom: 8px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 140px;
+            height: 5px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 3px;
+        }
+
+        /* Original Gallery Styles */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 30px 20px;
+        }
+
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 25px;
+            margin-top: 20px;
+        }
+
+        .image-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .image-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15);
+        }
+
+        .image-card img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            transition: transform 0.3s ease;
+        }
+
+        .image-card:hover img {
+            transform: scale(1.05);
+        }
+
+        .card-content {
+            padding: 20px;
+        }
+
+        .image-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 10px;
+            line-height: 1.4;
+        }
+
+        .image-date {
+            color: #666;
+            font-size: 0.9rem;
+            margin-bottom: 15px;
+        }
+
+        .card-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-small {
+            padding: 8px 15px;
+            font-size: 0.85rem;
+            border-radius: 15px;
+            flex: 1;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+            color: white;
+        }
+
+        .btn-info {
+            background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+            color: white;
+        }
+
+        /* Status Messages */
+        .status {
+            margin: 20px 0;
+            padding: 15px 20px;
+            border-radius: 15px;
+            font-weight: 500;
+            text-align: center;
+            display: none;
+        }
+
+        .status.success {
+            background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+            color: #155724;
+            border: 2px solid #c3e6cb;
+        }
+
+        .status.error {
+            background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+            color: #721c24;
+            border: 2px solid #f5c6cb;
+        }
+
+        .status.loading {
+            background: linear-gradient(135deg, #d1ecf1 0%, #bee5eb 100%);
+            color: #0c5460;
+            border: 2px solid #bee5eb;
+        }
+
+        .loading-spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #4CAF50;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 80px 20px;
+        }
+
+        .empty-icon {
+            font-size: 5rem;
+            color: rgba(0, 0, 0, 0.3);
+            margin-bottom: 20px;
+        }
+
+        .empty-text {
+            color: #333;
+            font-size: 1.3rem;
+            margin-bottom: 10px;
+        }
+
+        .empty-hint {
+            color: #666;
+            font-size: 1rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .gallery-grid {
+                grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+                gap: 20px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .top-bar {
+                padding: 12px 15px;
+                height: 60px;
+            }
+            
+            .logo-text {
+                font-size: 24px;
+            }
+            
+            body {
+                padding-top: 60px;
+                padding-bottom: 70px;
+            }
+            
+            .bottom-nav {
+                padding: 12px 15px 20px 15px;
+            }
+            
+            .nav-item {
+                min-width: 50px;
+                padding: 6px 8px;
+            }
+            
+            .nav-icon {
+                width: 24px;
+                height: 24px;
+            }
+            
+            .nav-label {
+                font-size: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Top Bar -->
+    <header class="top-bar">
+        <div class="logo">
+            <span class="logo-text">🖼️ AR Gallery</span>
+        </div>
+    </header>
+
+    <!-- Gallery Page -->
+    <div id="galleryPage" class="container">
+        <div id="galleryContent">
+            <div class="empty-state" id="emptyState">
+                <div class="empty-icon">📸</div>
+                <div class="empty-text">কোন ছবি পাওয়া যায়নি</div>
+                <div class="empty-hint">আপলোড বাটনে ক্লিক করে নতুন ছবি আপলোড করুন</div>
+            </div>
+            <div class="gallery-grid" id="imageGallery"></div>
+        </div>
+        <div id="galleryStatus" class="status"></div>
+    </div>
+
+    <!-- Bottom Navigation -->
+    <nav class="bottom-nav">
+        <a href="index.html" class="nav-item active">
+            <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                <rect x="7" y="7" width="4" height="4"></rect>
+                <rect x="13" y="7" width="4" height="4"></rect>
+                <rect x="7" y="13" width="4" height="4"></rect>
+                <rect x="13" y="13" width="4" height="4"></rect>
+            </svg>
+            <span class="nav-label">গ্যালারি</span>
+        </a>
+        <a href="upload.html" class="nav-item">
+            <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="17 8 12 3 7 8"></polyline>
+                <line x1="12" y1="3" x2="12" y2="15"></line>
+            </svg>
+            <span class="nav-label">আপলোড</span>
+        </a>
+        <div class="home-indicator"></div>
+    </nav>
+
+    <script>
+        // GitHub API Configuration
+        const GITHUB_CONFIG = {
+            token: 'YOUR_GITHUB_TOKEN_HERE',
+            owner: 'YOUR_USERNAME',
+            repo: 'YOUR_REPO_NAME',
+            branch: 'main'
+        };
+
+        // Load Images
+        async function loadImages() {
+            showStatus('galleryStatus', 'ছবি লোড হচ্ছে...', 'loading');
+
+            try {
+                const response = await fetch(`https://api.github.com/repos/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}/contents/images`, {
+                    headers: {
+                        'Authorization': `token ${GITHUB_CONFIG.token}`,
+                        'Accept': 'application/vnd.github.v3+json'
+                    }
+                });
+
+                if (response.ok) {
+                    const files = await response.json();
+                    const imageFiles = files.filter(file => 
+                        file.type === 'file' && 
+                        /\.(jpg|jpeg|png|gif|webp)$/i.test(file.name)
+                    );
+
+                    if (imageFiles.length > 0) {
+                        await displayImages(imageFiles);
+                        document.getElementById('emptyState').style.display = 'none';
+                        document.getElementById('imageGallery').style.display = 'grid';
+                        showStatus('galleryStatus', `${imageFiles.length}টি ছবি পাওয়া গেছে`, 'success');
+                    } else {
+                        document.getElementById('emptyState').style.display = 'block';
+                        document.getElementById('imageGallery').style.display = 'none';
+                        hideStatus('galleryStatus');
+                    }
+                } else if (response.status === 404) {
+                    document.getElementById('emptyState').style.display = 'block';
+                    document.getElementById('imageGallery').style.display = 'none';
+                    hideStatus('galleryStatus');
+                } else {
+                    throw new Error('ছবি লোড করতে ব্যর্থ');
+                }
+            } catch (error) {
+                console.error('Load images error:', error);
+                showStatus('galleryStatus', `ছবি লোড করতে ব্যর্থ: ${error.message}`, 'error');
+            }
+        }
+
+        // Display Images
+        async function displayImages(imageFiles) {
+            const gallery = document.getElementById('imageGallery');
+            gallery.innerHTML = '';
+
+            for (const file of imageFiles) {
+                const imageCard = document.createElement('div');
+                imageCard.className = 'image-card';
+
+                let metadata = null;
+                try {
+                    const metadataResponse = await fetch(`https://api.github.com/repos/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}/contents/metadata/${file.name}.json`, {
+                        headers: {
+                            'Authorization': `token ${GITHUB_CONFIG.token}`,
+                            'Accept': 'application/vnd.github.v3+json'
+                        }
+                    });
+                    if (metadataResponse.ok) {
+                        const metadataFile = await metadataResponse.json();
+                        metadata = JSON.parse(atob(metadataFile.content));
+                    }
+                } catch (e) {
+                    // Metadata not found
+                }
+
+                const title = metadata ? metadata.title : file.name;
+                const uploadDate = metadata ? new Date(metadata.uploadDate).toLocaleDateString('bn-BD') : 'অজানা';
+
+                imageCard.innerHTML = `
+                    <img src="${file.download_url}" alt="${title}" loading="lazy">
+                    <div class="card-content">
+                        <div class="image-title">${title}</div>
+                        <div class="image-date">📅 ${uploadDate}</div>
+                        <div class="card-actions">
+                            <button class="btn-small btn-info" onclick="downloadImage('${file.download_url}', '${title}')">
+                                📥 ডাউনলোড
+                            </button>
+                            <button class="btn-small btn-danger" onclick="deleteImage('${file.name}', '${file.sha}', '${title}')">
+                                🗑️ ডিলিট
+                            </button>
+                        </div>
+                    </div>
+                `;
+
+                gallery.appendChild(imageCard);
+            }
+        }
+
+        // Download Image
+        function downloadImage(url, title) {
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = title;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // Delete Image
+        async function deleteImage(fileName, sha, title) {
+            if (!confirm(`আপনি কি নিশ্চিত যে "${title}" ছবিটি ডিলিট করতে চান?`)) {
+                return;
+            }
+
+            try {
+                showStatus('galleryStatus', 'ছবি ডিলিট হচ্ছে...', 'loading');
+
+                const response = await fetch(`https://api.github.com/repos/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}/contents/images/${fileName}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `token ${GITHUB_CONFIG.token}`,
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/vnd.github.v3+json'
+                    },
+                    body: JSON.stringify({
+                        message: `Delete image: ${title}`,
+                        sha: sha,
+                        branch: GITHUB_CONFIG.branch
+                    })
+                });
+
+                if (response.ok) {
+                    try {
+                        const metadataResponse = await fetch(`https://api.github.com/repos/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}/contents/metadata/${fileName}.json`, {
+                            headers: {
+                                'Authorization': `token ${GITHUB_CONFIG.token}`,
+                                'Accept': 'application/vnd.github.v3+json'
+                            }
+                        });
+                        if (metadataResponse.ok) {
+                            const metadataFile = await metadataResponse.json();
+                            await fetch(`https://api.github.com/repos/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}/contents/metadata/${fileName}.json`, {
+                                method: 'DELETE',
+                                headers: {
+                                    'Authorization': `token ${GITHUB_CONFIG.token}`,
+                                    'Content-Type': 'application/json',
+                                    'Accept': 'application/vnd.github.v3+json'
+                                },
+                                body: JSON.stringify({
+                                    message: `Delete metadata for: ${title}`,
+                                    sha: metadataFile.sha,
+                                    branch: GITHUB_CONFIG.branch
+                                })
+                            });
+                        }
+                    } catch (e) {
+                        // Metadata deletion failed
+                    }
+
+                    showStatus('galleryStatus', 'ছবি সফলভাবে ডিলিট হয়েছে!', 'success');
+                    loadImages();
+                } else {
+                    throw new Error('ডিলিট ব্যর্থ হয়েছে');
+                }
+            } catch (error) {
+                console.error('Delete error:', error);
+                showStatus('galleryStatus', `ডিলিট ব্যর্থ: ${error.message}`, 'error');
+            }
+        }
+
+        // Utility Functions
+        function showStatus(elementId, message, type) {
+            const element = document.getElementById(elementId);
+            element.className = `status ${type}`;
+            element.style.display = 'block';
+            
+            if (type === 'loading') {
+                element.innerHTML = `
+                    <div class="loading-spinner"></div>
+                    ${message}
+                `;
+            } else {
+                element.textContent = message;
+            }
+
+            if (type === 'success') {
+                setTimeout(() => hideStatus(elementId), 3000);
+            }
+        }
+
+        function hideStatus(elementId) {
+            const element = document.getElementById(elementId);
+            element.style.display = 'none';
+            element.innerHTML = '';
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            loadImages();
+        });
+    </script>
+</body>
+</html>
