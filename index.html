@@ -372,6 +372,15 @@
             box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
         }
 
+        .api-url-input {
+            padding: 10px;
+            width: 100%;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+
         @media (max-width: 768px) {
             .gallery-grid {
                 grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
@@ -447,6 +456,7 @@
                 <button class="btn" onclick="testAPIConnection()">Connection Test করুন</button>
             </div>
             <div id="connectionInfo">
+                <input type="text" id="apiUrlInput" class="api-url-input" placeholder="API Server URL (e.g., http://localhost:3000)" value="http://localhost:3000">
                 <p><strong>API Server URL:</strong> <span id="currentApiUrl">http://localhost:3000</span></p>
                 <p><strong>Status:</strong> <span id="connectionStatus">Testing...</span></p>
                 <p><strong>Last Check:</strong> <span id="lastCheck">-</span></p>
@@ -525,7 +535,7 @@
             lastSync: 'Never'
         };
 
-        // Log messages (for debugging or console logging)
+        // Log messages
         function addLog(message, type = 'info') {
             const logTypes = {
                 info: 'ℹ️ INFO',
@@ -550,7 +560,6 @@
                 statusElement.textContent = message;
             }
 
-            // Auto-hide status after 5 seconds (except for loading)
             if (type !== 'loading') {
                 setTimeout(() => hideStatus(elementId), 5000);
             }
@@ -572,21 +581,42 @@
             document.getElementById('lastSync').textContent = serverStats.lastSync;
         }
 
-        // Check if running on different ports/hosts
-        function detectAPIServerURL() {
-            const currentHost = window.location.hostname;
-            const currentPort = window.location.port;
-            
-            // Try different common configurations
-            const possibleURLs = [
-                `http://${currentHost}:3000`,
-                `http://localhost:3000`,
-                `http://127.0.0.1:3000`,
-                `${window.location.protocol}//${currentHost}:3000`
-            ];
+        // Validate URL
+        function isValidURL(url) {
+            try {
+                new URL(url);
+                return true;
+            } catch (e) {
+                return false;
+            }
+        }
 
-            document.getElementById('currentApiUrl').textContent = possibleURLs[0];
-            API_SERVER_URL = possibleURLs[0];
+        // Detect or set API Server URL
+        function detectAPIServerURL() {
+            const apiUrlInput = document.getElementById('apiUrlInput').value.trim();
+            const currentHost = window.location.hostname || 'localhost';
+            const currentProtocol = window.location.protocol;
+            
+            // Use user-provided URL if valid
+            if (apiUrlInput && isValidURL(apiUrlInput)) {
+                API_SERVER_URL = apiUrlInput;
+            } else {
+                // Fallback to default configurations
+                const possibleURLs = [
+                    `http://localhost:3000`,
+                    `http://127.0.0.1:3000`,
+                    `${currentProtocol}//${currentHost}:3000`
+                ];
+
+                // Select the first valid URL
+                API_SERVER_URL = possibleURLs.find(url => isValidURL(url)) || 'http://localhost:3000';
+            }
+
+            // Ensure the URL ends without a trailing slash
+            API_SERVER_URL = API_SERVER_URL.replace(/\/$/, '');
+            document.getElementById('currentApiUrl').textContent = API_SERVER_URL;
+            document.getElementById('apiUrlInput').value = API_SERVER_URL;
+            addLog(`API Server URL set to: ${API_SERVER_URL}`, 'info');
         }
 
         // Test API Connection
@@ -595,9 +625,14 @@
             const lastCheckElement = document.getElementById('lastCheck');
             const apiStatusIndicator = document.getElementById('apiStatusIndicator');
             
+            detectAPIServerURL(); // Update URL before testing
             statusElement.textContent = 'Testing...';
             
             try {
+                if (!isValidURL(API_SERVER_URL)) {
+                    throw new Error('Invalid API Server URL');
+                }
+
                 addLog('Testing API server connection...', 'info');
                 const response = await makeAPICall('/api/status');
                 
@@ -609,13 +644,10 @@
                     apiStatusIndicator.className = 'api-status api-connected';
                     apiStatusIndicator.innerHTML = '<span>🟢</span><span>API Connected</span>';
                     
-                    // Update server stats
                     if (response.uptime !== undefined) serverStats.serverUptime = response.uptime;
                     updateStats();
                     
                     addLog('✅ API server connected successfully', 'success');
-                    
-                    // Auto-load images if connected
                     setTimeout(() => loadImages(), 1000);
                 } else {
                     throw new Error('Invalid response from API server');
@@ -641,6 +673,10 @@
             updateStats();
 
             const url = `${API_SERVER_URL}${endpoint}`;
+            if (!isValidURL(url)) {
+                throw new Error(`Invalid URL: ${url}`);
+            }
+
             addLog(`🌐 API Call: ${options.method || 'GET'} ${endpoint}`, 'info');
 
             try {
@@ -684,7 +720,6 @@
                     throw new Error('No response from API');
                 }
 
-                // Handle different response formats
                 let imageFiles = [];
                 if (Array.isArray(response)) {
                     imageFiles = response.filter(file => 
@@ -719,7 +754,6 @@
                 showStatus('galleryStatus', `ছবি লোড করতে ব্যর্থ: ${error.message}`, 'error');
                 addLog(`Image load failed: ${error.message}`, 'error');
                 
-                // Show empty state on error
                 document.getElementById('emptyState').style.display = 'block';
                 document.getElementById('imageGallery').style.display = 'none';
             }
@@ -734,7 +768,6 @@
                 const imageCard = document.createElement('div');
                 imageCard.className = 'image-card';
 
-                // Try to get metadata
                 let metadata = null;
                 try {
                     const metadataResponse = await makeAPICall(`/api/github/files?path=metadata/${file.name}.json`);
@@ -816,7 +849,6 @@
                     throw new Error(deleteResponse?.error || 'Delete operation failed');
                 }
 
-                // Try to delete metadata
                 try {
                     const metadataResponse = await makeAPICall(`/api/github/files?path=metadata/${fileName}.json`);
                     if (metadataResponse && metadataResponse.sha) {
@@ -834,8 +866,6 @@
 
                 showStatus('galleryStatus', 'ছবি সফলভাবে ডিলিট হয়েছে!', 'success');
                 addLog(`Deleted image: ${title}`, 'success');
-
-                // Reload images after deletion
                 setTimeout(() => loadImages(), 1000);
             } catch (error) {
                 addLog(`Delete failed: ${error.message}`, 'error');
@@ -847,6 +877,12 @@
         window.onload = () => {
             detectAPIServerURL();
             testAPIConnection();
+
+            // Update API URL when user changes input
+            document.getElementById('apiUrlInput').addEventListener('change', () => {
+                detectAPIServerURL();
+                testAPIConnection();
+            });
         };
     </script>
 </body>
