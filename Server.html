@@ -1,0 +1,997 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Live API Server</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .config-section {
+            background: rgba(255,255,255,0.95);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+        }
+
+        .config-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .panel {
+            background: rgba(255,255,255,0.95);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .panel h3 {
+            color: #4a5568;
+            margin-bottom: 20px;
+            font-size: 1.3em;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #4a5568;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+            font-family: 'Courier New', monospace;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-success { background: linear-gradient(135deg, #48bb78 0%, #38a169 100%); }
+        .btn-danger { background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%); }
+        .btn-warning { background: linear-gradient(135deg, #ed8936 0%, #dd6b20 100%); }
+
+        .api-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .api-item {
+            background: #f8f9fa;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .api-item:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+        }
+
+        .api-method {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+
+        .method-get { background: #48bb78; color: white; }
+        .method-post { background: #ed8936; color: white; }
+        .method-put { background: #4299e1; color: white; }
+        .method-delete { background: #f56565; color: white; }
+
+        .api-url {
+            font-family: 'Courier New', monospace;
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 8px 12px;
+            border-radius: 5px;
+            margin: 8px 0;
+            word-break: break-all;
+        }
+
+        .logs {
+            background: #2d3748;
+            color: #e2e8f0;
+            border-radius: 8px;
+            padding: 15px;
+            height: 300px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.4;
+        }
+
+        .log-entry {
+            margin-bottom: 5px;
+            padding: 5px;
+            border-radius: 3px;
+        }
+
+        .log-info { background-color: rgba(66, 153, 225, 0.1); }
+        .log-success { background-color: rgba(72, 187, 120, 0.1); }
+        .log-error { background-color: rgba(245, 101, 101, 0.1); }
+
+        .status-indicator {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-weight: bold;
+            z-index: 1000;
+        }
+
+        .status-online { background: #48bb78; color: white; }
+        .status-offline { background: #f56565; color: white; }
+
+        .code-block {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+        }
+
+        .tabs {
+            display: flex;
+            margin-bottom: 15px;
+        }
+
+        .tab {
+            padding: 10px 20px;
+            background: #e2e8f0;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px 5px 0 0;
+            margin-right: 5px;
+        }
+
+        .tab.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @media (max-width: 1024px) {
+            .dashboard {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .config-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="status-indicator status-online" id="statusIndicator">
+        🟢 Server Online
+    </div>
+
+    <div class="container">
+        <div class="header">
+            <h1>🚀 Advanced Live API Server</h1>
+            <p>GitHub Integration সহ Custom API Server</p>
+        </div>
+
+        <!-- Configuration Section -->
+        <div class="config-section">
+            <h3>⚙️ Server Configuration</h3>
+            <div class="config-grid">
+                <div class="form-group">
+                    <label>GitHub Token (PAT):</label>
+                    <input type="password" id="githubToken" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx">
+                </div>
+                <div class="form-group">
+                    <label>GitHub Username:</label>
+                    <input type="text" id="githubOwner" placeholder="myusername">
+                </div>
+                <div class="form-group">
+                    <label>Repository Name:</label>
+                    <input type="text" id="githubRepo" placeholder="my-repo-name">
+                </div>
+                <div class="form-group">
+                    <label>Branch:</label>
+                    <input type="text" id="githubBranch" value="main" placeholder="main">
+                </div>
+            </div>
+            <button class="btn btn-success" onclick="saveConfig()">Configuration Save করুন</button>
+            <button class="btn btn-warning" onclick="testGitHubConnection()">GitHub Connection Test করুন</button>
+        </div>
+
+        <div class="dashboard">
+            <!-- API Creation Panel -->
+            <div class="panel">
+                <h3>নতুন API তৈরি করুন</h3>
+                
+                <div class="tabs">
+                    <button class="tab active" onclick="switchTab('simple')">Simple API</button>
+                    <button class="tab" onclick="switchTab('github')">GitHub API</button>
+                </div>
+
+                <!-- Simple API Tab -->
+                <div id="simple-tab" class="tab-content active">
+                    <div class="form-group">
+                        <label>API Path:</label>
+                        <input type="text" id="apiPath" placeholder="/api/users" value="/api/">
+                    </div>
+                    <div class="form-group">
+                        <label>HTTP Method:</label>
+                        <select id="apiMethod">
+                            <option value="GET">GET</option>
+                            <option value="POST">POST</option>
+                            <option value="PUT">PUT</option>
+                            <option value="DELETE">DELETE</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Response Data (JSON):</label>
+                        <textarea id="apiResponse" placeholder='{"message": "Hello World", "status": "success"}'></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Status Code:</label>
+                        <select id="statusCode">
+                            <option value="200">200 - OK</option>
+                            <option value="201">201 - Created</option>
+                            <option value="400">400 - Bad Request</option>
+                            <option value="401">401 - Unauthorized</option>
+                            <option value="404">404 - Not Found</option>
+                            <option value="500">500 - Server Error</option>
+                        </select>
+                    </div>
+                    <button class="btn" onclick="addAPI()">Simple API যোগ করুন</button>
+                </div>
+
+                <!-- GitHub API Tab -->
+                <div id="github-tab" class="tab-content">
+                    <div class="form-group">
+                        <label>API Path:</label>
+                        <input type="text" id="githubApiPath" placeholder="/api/github/files" value="/api/github/">
+                    </div>
+                    <div class="form-group">
+                        <label>GitHub Action:</label>
+                        <select id="githubAction">
+                            <option value="list-files">List Repository Files</option>
+                            <option value="get-file">Get File Content</option>
+                            <option value="repo-info">Repository Info</option>
+                            <option value="commits">Recent Commits</option>
+                            <option value="issues">List Issues</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>File Path (if needed):</label>
+                        <input type="text" id="githubFilePath" placeholder="README.md or images/photo.jpg">
+                    </div>
+                    <button class="btn btn-success" onclick="addGitHubAPI()">GitHub API যোগ করুন</button>
+                </div>
+
+                <button class="btn btn-danger" onclick="clearAllAPIs()">সব API মুছুন</button>
+            </div>
+
+            <!-- API List Panel -->
+            <div class="panel">
+                <h3>Active APIs</h3>
+                <div id="apiList" class="api-list">
+                    <!-- APIs will be displayed here -->
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="panel">
+                <h3>🎯 Quick Actions</h3>
+                <button class="btn" onclick="addSampleAPIs()">Sample APIs যোগ করুন</button>
+                <button class="btn btn-warning" onclick="exportConfig()">Configuration Export</button>
+                <button class="btn btn-success" onclick="importConfig()">Configuration Import</button>
+                <div style="margin-top: 15px;">
+                    <input type="file" id="configFile" accept=".json" style="display: none;" onchange="handleConfigImport()">
+                </div>
+                <div style="margin-top: 20px;">
+                    <h4>Server Stats:</h4>
+                    <p>Total APIs: <span id="totalAPIs">0</span></p>
+                    <p>Total Requests: <span id="totalRequests">0</span></p>
+                    <p>Server Uptime: <span id="uptime">0</span> minutes</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Test Panel -->
+        <div class="panel">
+            <h3>🧪 API Test Panel</h3>
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px;">
+                <div>
+                    <label>Test URL:</label>
+                    <input type="text" id="testUrl" placeholder="/api/users">
+                </div>
+                <div>
+                    <label>Method:</label>
+                    <select id="testMethod">
+                        <option value="GET">GET</option>
+                        <option value="POST">POST</option>
+                        <option value="PUT">PUT</option>
+                        <option value="DELETE">DELETE</option>
+                    </select>
+                </div>
+                <div>
+                    <label>Headers (JSON):</label>
+                    <input type="text" id="testHeaders" placeholder='{"Authorization": "Bearer token"}'>
+                </div>
+            </div>
+            <div style="margin-top: 15px;">
+                <label>Request Body (JSON):</label>
+                <textarea id="testBody" placeholder='{"name": "John", "email": "john@example.com"}'></textarea>
+            </div>
+            <button class="btn" onclick="testAPI()">Test API</button>
+            <button class="btn btn-warning" onclick="generateAPIDoc()">API Documentation Generate</button>
+            
+            <div id="testResult" style="margin-top: 15px; display: none;">
+                <h4>Test Result:</h4>
+                <div class="code-block" id="testOutput"></div>
+            </div>
+        </div>
+
+        <!-- Server Logs -->
+        <div class="panel">
+            <h3>🔍 Server Logs</h3>
+            <div id="serverLogs" class="logs">
+                <div class="log-entry log-info">Server started successfully...</div>
+            </div>
+            <button class="btn" onclick="clearLogs()">Logs Clear</button>
+            <button class="btn btn-warning" onclick="downloadLogs()">Logs Download</button>
+        </div>
+
+        <!-- API Documentation -->
+        <div class="panel" id="apiDocPanel" style="display: none;">
+            <h3>📚 API Documentation</h3>
+            <div id="apiDocContent" class="code-block"></div>
+        </div>
+    </div>
+
+    <script>
+        // Global Configuration
+        let GITHUB_CONFIG = {
+            token: '',
+            owner: '',
+            repo: '',
+            branch: 'main'
+        };
+
+        // Global variables
+        let apiRoutes = {};
+        let serverRunning = true;
+        let totalRequests = 0;
+        let serverStartTime = Date.now();
+        let logs = [];
+
+        // Initialize server
+        function initServer() {
+            // Load config from localStorage
+            const savedConfig = localStorage.getItem('apiServerConfig');
+            if (savedConfig) {
+                const config = JSON.parse(savedConfig);
+                GITHUB_CONFIG = { ...GITHUB_CONFIG, ...config };
+                updateConfigForm();
+            }
+
+            // Load APIs from localStorage
+            const savedAPIs = localStorage.getItem('apiRoutes');
+            if (savedAPIs) {
+                apiRoutes = JSON.parse(savedAPIs);
+            }
+
+            // Add default APIs
+            addDefaultAPIs();
+            updateAPIList();
+            updateStats();
+            addLog('Server initialized successfully', 'success');
+
+            // Update uptime every minute
+            setInterval(updateStats, 60000);
+        }
+
+        // Add default APIs
+        function addDefaultAPIs() {
+            apiRoutes['/api/status'] = {
+                method: 'GET',
+                response: { 
+                    status: 'online', 
+                    message: 'Server is running', 
+                    timestamp: new Date().toISOString(),
+                    uptime: 0
+                },
+                statusCode: 200,
+                type: 'simple'
+            };
+
+            apiRoutes['/api/hello'] = {
+                method: 'GET',
+                response: { message: 'Hello from Advanced API Server!', version: '2.0' },
+                statusCode: 200,
+                type: 'simple'
+            };
+        }
+
+        // Save configuration
+        function saveConfig() {
+            GITHUB_CONFIG = {
+                token: document.getElementById('githubToken').value,
+                owner: document.getElementById('githubOwner').value,
+                repo: document.getElementById('githubRepo').value,
+                branch: document.getElementById('githubBranch').value
+            };
+
+            localStorage.setItem('apiServerConfig', JSON.stringify(GITHUB_CONFIG));
+            addLog('Configuration saved successfully', 'success');
+            alert('Configuration saved!');
+        }
+
+        // Update config form
+        function updateConfigForm() {
+            document.getElementById('githubToken').value = GITHUB_CONFIG.token || '';
+            document.getElementById('githubOwner').value = GITHUB_CONFIG.owner || '';
+            document.getElementById('githubRepo').value = GITHUB_CONFIG.repo || '';
+            document.getElementById('githubBranch').value = GITHUB_CONFIG.branch || 'main';
+        }
+
+        // Test GitHub connection
+        async function testGitHubConnection() {
+            if (!GITHUB_CONFIG.token || !GITHUB_CONFIG.owner || !GITHUB_CONFIG.repo) {
+                addLog('GitHub configuration incomplete', 'error');
+                alert('Please configure GitHub settings first!');
+                return;
+            }
+
+            try {
+                const response = await fetch(`https://api.github.com/repos/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}`, {
+                    headers: {
+                        'Authorization': `token ${GITHUB_CONFIG.token}`,
+                        'Accept': 'application/vnd.github.v3+json'
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    addLog(`GitHub connection successful! Repository: ${data.full_name}`, 'success');
+                    alert('GitHub connection successful!');
+                } else {
+                    addLog(`GitHub connection failed: ${response.status}`, 'error');
+                    alert('GitHub connection failed! Check your credentials.');
+                }
+            } catch (error) {
+                addLog(`GitHub connection error: ${error.message}`, 'error');
+                alert('Connection error! Check your network.');
+            }
+        }
+
+        // Switch tabs
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.getElementById(`${tabName}-tab`).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        // Add simple API
+        function addAPI() {
+            const path = document.getElementById('apiPath').value.trim();
+            const method = document.getElementById('apiMethod').value;
+            const responseText = document.getElementById('apiResponse').value.trim();
+            const statusCode = parseInt(document.getElementById('statusCode').value);
+
+            if (!path || !path.startsWith('/')) {
+                addLog('Invalid API path provided', 'error');
+                alert('Valid API Path দিন যেটা / দিয়ে শুরু হয়!');
+                return;
+            }
+
+            let response;
+            try {
+                response = responseText ? JSON.parse(responseText) : { message: 'Default response' };
+            } catch (e) {
+                addLog('Invalid JSON in response data', 'error');
+                alert('Invalid JSON format!');
+                return;
+            }
+
+            const routeKey = `${method}:${path}`;
+            apiRoutes[routeKey] = {
+                method: method,
+                path: path,
+                response: response,
+                statusCode: statusCode,
+                type: 'simple'
+            };
+
+            localStorage.setItem('apiRoutes', JSON.stringify(apiRoutes));
+            updateAPIList();
+            updateStats();
+            addLog(`New API added: ${method} ${path}`, 'success');
+
+            document.getElementById('apiPath').value = '/api/';
+            document.getElementById('apiResponse').value = '';
+        }
+
+        // Add GitHub API
+        function addGitHubAPI() {
+            if (!GITHUB_CONFIG.token || !GITHUB_CONFIG.owner || !GITHUB_CONFIG.repo) {
+                addLog('GitHub configuration incomplete for API creation', 'error');
+                alert('Please configure GitHub settings first!');
+                return;
+            }
+
+            const path = document.getElementById('githubApiPath').value.trim();
+            const action = document.getElementById('githubAction').value;
+            const filePath = document.getElementById('githubFilePath').value.trim();
+
+            if (!path || !path.startsWith('/')) {
+                addLog('Invalid GitHub API path provided', 'error');
+                alert('Valid API Path দিন!');
+                return;
+            }
+
+            const routeKey = `GET:${path}`;
+            apiRoutes[routeKey] = {
+                method: 'GET',
+                path: path,
+                type: 'github',
+                action: action,
+                filePath: filePath,
+                statusCode: 200
+            };
+
+            localStorage.setItem('apiRoutes', JSON.stringify(apiRoutes));
+            updateAPIList();
+            updateStats();
+            addLog(`New GitHub API added: GET ${path} (${action})`, 'success');
+
+            document.getElementById('githubApiPath').value = '/api/github/';
+            document.getElementById('githubFilePath').value = '';
+        }
+
+        // Handle GitHub API calls
+        async function handleGitHubAPI(route) {
+            const { action, filePath } = route;
+            let url = '';
+
+            switch (action) {
+                case 'list-files':
+                    url = `https://api.github.com/repos/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}/contents/${filePath || ''}`;
+                    break;
+                case 'get-file':
+                    if (!filePath) {
+                        addLog('File path required for get-file action', 'error');
+                        return { error: 'File path required for get-file action' };
+                    }
+                    url = `https://api.github.com/repos/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}/contents/${filePath}`;
+                    break;
+                case 'repo-info':
+                    url = `https://api.github.com/repos/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}`;
+                    break;
+                case 'commits':
+                    url = `https://api.github.com/repos/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}/commits`;
+                    break;
+                case 'issues':
+                    url = `https://api.github.com/repos/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}/issues`;
+                    break;
+                default:
+                    addLog('Unknown GitHub action', 'error');
+                    return { error: 'Unknown GitHub action' };
+            }
+
+            try {
+                const response = await fetch(url, {
+                    headers: {
+                        'Authorization': `token ${GITHUB_CONFIG.token}`,
+                        'Accept': 'application/vnd.github.v3+json'
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    return data;
+                } else {
+                    addLog(`GitHub API error: ${response.status}`, 'error');
+                    return { error: `GitHub API error: ${response.status}` };
+                }
+            } catch (error) {
+                addLog(`Network error: ${error.message}`, 'error');
+                return { error: `Network error: ${error.message}` };
+            }
+        }
+
+        // Add sample APIs
+        function addSampleAPIs() {
+            const samples = [
+                {
+                    path: '/api/users',
+                    method: 'GET',
+                    response: [
+                        { id: 1, name: 'John Doe', email: 'john@example.com' },
+                        { id: 2, name: 'Jane Smith', email: 'jane@example.com' }
+                    ],
+                    statusCode: 200,
+                    type: 'simple'
+                },
+                {
+                    path: '/api/products',
+                    method: 'GET',
+                    response: [
+                        { id: 1, name: 'Laptop', price: 999.99, category: 'Electronics' },
+                        { id: 2, name: 'Phone', price: 699.99, category: 'Electronics' }
+                    ],
+                    statusCode: 200,
+                    type: 'simple'
+                }
+            ];
+
+            samples.forEach(sample => {
+                const routeKey = `${sample.method}:${sample.path}`;
+                apiRoutes[routeKey] = sample;
+            });
+
+            localStorage.setItem('apiRoutes', JSON.stringify(apiRoutes));
+            updateAPIList();
+            updateStats();
+            addLog('Sample APIs added', 'success');
+        }
+
+        // Remove API
+        function removeAPI(routeKey) {
+            if (confirm('এই API টি মুছে ফেলতে চান?')) {
+                delete apiRoutes[routeKey];
+                localStorage.setItem('apiRoutes', JSON.stringify(apiRoutes));
+                updateAPIList();
+                updateStats();
+                addLog(`API removed: ${routeKey}`, 'info');
+            }
+        }
+
+        // Clear all APIs
+        function clearAllAPIs() {
+            if (confirm('সব API মুছে ফেলতে চান?')) {
+                apiRoutes = {};
+                addDefaultAPIs();
+                localStorage.setItem('apiRoutes', JSON.stringify(apiRoutes));
+                updateAPIList();
+                updateStats();
+                addLog('All APIs cleared, defaults restored', 'info');
+            }
+        }
+
+        // Update API list display
+        function updateAPIList() {
+            const apiList = document.getElementById('apiList');
+            apiList.innerHTML = '';
+
+            if (Object.keys(apiRoutes).length === 0) {
+                apiList.innerHTML = '<p style="text-align: center; color: #999; padding: 20px;">কোন API নেই</p>';
+                return;
+            }
+
+            for (const [routeKey, route] of Object.entries(apiRoutes)) {
+                const apiItem = document.createElement('div');
+                apiItem.className = 'api-item';
+                
+                const typeIcon = route.type === 'github' ? '🐙' : '📡';
+                const actionText = route.type === 'github' ? ` (${route.action})` : '';
+                
+                apiItem.innerHTML = `
+                    <div>
+                        ${typeIcon} <span class="api-method method-${route.method.toLowerCase()}">${route.method}</span>
+                        <strong>${route.path}</strong>${actionText}
+                        <button class="btn btn-danger" onclick="removeAPI('${routeKey}')" style="float: right; padding: 5px 10px; font-size: 12px;">মুছুন</button>
+                    </div>
+                    <div class="api-url">${route.type === 'github' ? 'GitHub API Integration' : JSON.stringify(route.response || {}, null, 2).substring(0, 100) + '...'}</div>
+                    <small>Status Code: ${route.statusCode} | Type: ${route.type}</small>
+                `;
+                apiList.appendChild(apiItem);
+            }
+        }
+
+        // Test API
+        async function testAPI() {
+            const url = document.getElementById('testUrl').value.trim();
+            const method = document.getElementById('testMethod').value;
+            const body = document.getElementById('testBody').value.trim();
+            const headersText = document.getElementById('testHeaders').value.trim();
+
+            if (!url) {
+                addLog('Test URL not provided', 'error');
+                alert('Test URL দিন!');
+                return;
+            }
+
+            totalRequests++;
+            updateStats();
+
+            const routeKey = `${method}:${url}`;
+            const route = apiRoutes[routeKey];
+
+            const testResult = document.getElementById('testResult');
+            const testOutput = document.getElementById('testOutput');
+
+            let headers;
+            try {
+                headers = headersText ? JSON.parse(headersText) : {};
+            } catch (e) {
+                addLog('Invalid JSON in headers', 'error');
+                alert('Invalid JSON in headers!');
+                return;
+            }
+
+            if (route) {
+                let result;
+                
+                if (route.type === 'github') {
+                    addLog(`Testing GitHub API: ${method} ${url}`, 'info');
+                    const githubResult = await handleGitHubAPI(route);
+                    result = {
+                        status: githubResult.error ? 500 : route.statusCode,
+                        data: githubResult,
+                        headers: headers,
+                        timestamp: new Date().toISOString(),
+                        type: 'github'
+                    };
+                } else {
+                    let requestData = null;
+                    if (body && (method === 'POST' || method === 'PUT')) {
+                        try {
+                            requestData = JSON.parse(body);
+                        } catch (e) {
+                            testOutput.textContent = 'Invalid JSON in request body!';
+                            testResult.style.display = 'block';
+                            addLog('Invalid JSON in request body', 'error');
+                            return;
+                        }
+                    }
+
+                    result = {
+                        status: route.statusCode,
+                        data: route.response,
+                        headers: headers,
+                        timestamp: new Date().toISOString(),
+                        requestBody: requestData,
+                        type: 'simple'
+                    };
+                }
+
+                testOutput.textContent = JSON.stringify(result, null, 2);
+                addLog(`API tested: ${method} ${url} - Status: ${result.status}`, 'success');
+            } else {
+                testOutput.textContent = `API not found: ${method} ${url}`;
+                addLog(`API test failed: ${method} ${url} - Not found`, 'error');
+            }
+
+            testResult.style.display = 'block';
+        }
+
+        // Generate API Documentation
+        function generateAPIDoc() {
+            let doc = `# API Documentation\n\nGenerated on: ${new Date().toISOString()}\n\n`;
+
+            for (const [routeKey, route] of Object.entries(apiRoutes)) {
+                const [method, path] = routeKey.split(':');
+                doc += `## ${method} ${path}\n`;
+                doc += `- **Type**: ${route.type}\n`;
+                doc += `- **Status Code**: ${route.statusCode}\n`;
+
+                if (route.type === 'github') {
+                    doc += `- **Action**: ${route.action}\n`;
+                    if (route.filePath) {
+                        doc += `- **File Path**: ${route.filePath}\n`;
+                    }
+                } else {
+                    doc += `- **Response**:\n\`\`\`json\n${JSON.stringify(route.response, null, 2)}\n\`\`\`\n`;
+                }
+                doc += `\n`;
+            }
+
+            const apiDocPanel = document.getElementById('apiDocPanel');
+            const apiDocContent = document.getElementById('apiDocContent');
+            apiDocContent.textContent = doc;
+            apiDocPanel.style.display = 'block';
+            addLog('API Documentation generated', 'success');
+        }
+
+        // Export configuration
+        function exportConfig() {
+            const config = {
+                github: GITHUB_CONFIG,
+                apiRoutes: apiRoutes
+            };
+
+            const blob = new Blob([JSON.stringify(config, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `api-server-config-${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            addLog('Configuration exported successfully', 'success');
+        }
+
+        // Import configuration
+        function importConfig() {
+            document.getElementById('configFile').click();
+        }
+
+        // Handle configuration import
+        function handleConfigImport() {
+            const fileInput = document.getElementById('configFile');
+            const file = fileInput.files[0];
+            if (!file) {
+                addLog('No file selected for import', 'error');
+                alert('Please select a JSON file!');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                try {
+                    const config = JSON.parse(event.target.result);
+                    GITHUB_CONFIG = config.github || GITHUB_CONFIG;
+                    apiRoutes = config.apiRoutes || apiRoutes;
+                    localStorage.setItem('apiServerConfig', JSON.stringify(GITHUB_CONFIG));
+                    localStorage.setItem('apiRoutes', JSON.stringify(apiRoutes));
+                    updateConfigForm();
+                    updateAPIList();
+                    updateStats();
+                    addLog('Configuration imported successfully', 'success');
+                    alert('Configuration imported successfully!');
+                } catch (e) {
+                    addLog('Invalid JSON file for import', 'error');
+                    alert('Invalid JSON file!');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        // Clear logs
+        function clearLogs() {
+            logs = [];
+            const serverLogs = document.getElementById('serverLogs');
+            serverLogs.innerHTML = '';
+            addLog('Logs cleared', 'info');
+        }
+
+        // Download logs
+        function downloadLogs() {
+            const logText = logs.map(log => `[${log.timestamp}] ${log.type.toUpperCase()}: ${log.message}`).join('\n');
+            const blob = new Blob([logText], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `server-logs-${new Date().toISOString().split('T')[0]}.txt`;
+            a.click();
+            URL.revokeObjectURL(url);
+            addLog('Logs downloaded', 'success');
+        }
+
+        // Add log entry
+        function addLog(message, type = 'info') {
+            const serverLogs = document.getElementById('serverLogs');
+            const logEntry = document.createElement('div');
+            logEntry.className = `log-entry log-${type}`;
+            logEntry.textContent = `[${new Date().toISOString()}] ${message}`;
+            serverLogs.appendChild(logEntry);
+            serverLogs.scrollTop = serverLogs.scrollHeight;
+            logs.push({ timestamp: new Date().toISOString(), message, type });
+        }
+
+        // Update server stats
+        function updateStats() {
+            const totalAPIs = Object.keys(apiRoutes).length;
+            const uptimeMinutes = Math.floor((Date.now() - serverStartTime) / 60000);
+
+            document.getElementById('totalAPIs').textContent = totalAPIs;
+            document.getElementById('totalRequests').textContent = totalRequests;
+            document.getElementById('uptime').textContent = uptimeMinutes;
+
+            // Update status API with current uptime
+            if (apiRoutes['GET:/api/status']) {
+                apiRoutes['GET:/api/status'].response.uptime = uptimeMinutes;
+                localStorage.setItem('apiRoutes', JSON.stringify(apiRoutes));
+            }
+        }
+
+        // Initialize server on page load
+        window.onload = initServer;
+    </script>
+</body>
+</html>
